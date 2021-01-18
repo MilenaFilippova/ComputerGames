@@ -9,6 +9,9 @@ function Manager:create()
     manager.foods = {}
     manager.time = 0
     manager.decrease = 0
+
+    manager.bacterium_id = nil
+    manager.n_bacterium = 0
     return manager
 end
 
@@ -17,6 +20,9 @@ function Manager:update(dt)
     self:checkFood()
     self:checkOther()
     self:randomForce()
+
+    self:playYourself()
+
     if #self.foods < self.nfood then
         table.insert(self.foods, Food:create())
     end
@@ -48,6 +54,59 @@ function Manager:update(dt)
         end
     end
 end
+
+function Manager:playYourself()
+    --проверяем,созданы ли бактерии
+    if self.bacterium_id == nil then
+        return
+    end
+    for k, v in pairs(self.objects) do
+        --проверяем жива ли наша бактерия-игрок
+        if k == self.bacterium_id then
+            human = v
+        end
+        self.n_bacterium = self.n_bacterium + 1
+    end
+
+
+    --если есть еда вычисляем растояние до нее и бежим к ней
+    if #self.foods > 1 then
+        local dist = human.location-self.foods[1].location
+        for i = 1, #self.foods do
+            local d = human.location-self.foods[i].location
+            if d:mag() < dist:mag() then
+                dist = d
+            end
+        end
+        --если нет соперников, бегаем за едой
+        if self.n_bacterium == 1 then
+            dp = dist:normForEat()
+            dp = dp * (-5)
+            human:applyForce(dp)
+        end
+    end
+    print(self.n_bacterium)
+
+
+    distd = Vector:create(10000,10000)
+    for k_, v_ in pairs(self.objects) do
+        --если есть бактерии-соперники, вычисляем растояние до них 
+        if self.bacterium_id ~= k_ then
+            local dd =  human.location-v_.location
+            --если бактерия-игрок больше соперника,бежим есть соперника
+            if dd:mag() < distd:mag() and human.life > v_.life then
+                distd = dd
+            end
+        end
+    end
+
+    dpd = distd:normForEat()
+    dpd = dpd * (-4)
+    human:applyForce(dpd)
+    self.n_bacterium = 0
+end
+
+
 
 function Manager:applyForce(id, x, y)
     local obj = self.objects[id]
@@ -195,6 +254,7 @@ function Manager:parse(data)
             color = {love.math.random(), love.math.random(), love.math.random()}
         end
         self:add(message.id, message.color, true)
+        self.bacterium_id = message.id
     elseif object == nil then
         return {status = "nil"}
     elseif message.cmd == "force" then
@@ -210,3 +270,4 @@ function Manager:parse(data)
     end
     return {status = "ok", cmd=message.cmd}
 end
+

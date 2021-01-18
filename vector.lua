@@ -23,6 +23,14 @@ function Vector:create(x, y)
     return vector
 end
 
+
+function Vector:normForEat()
+    m = self:mag()
+    if (m > 0) then
+        return self / m
+    end
+end
+
 function Vector:__tostring()
     return "Vector(x = " .. string.format("%.2f", self.x) .. ", y = " .. string.format("%.2f", self.y) .. ")"
 end
@@ -53,6 +61,8 @@ function Vector:norm()
         self:div(m)
     end
 end
+
+
 
 function Vector:add(other)
     self.x = self.x + other.x
